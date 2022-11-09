@@ -77,3 +77,6 @@ class GFortranConan(ConanFile):
         self.cpp_info.includedirs = []
         self.env_info.PATH.append(bin_path)
         self.cpp_info.libs = ["gfortran"]
+        compiler = os.path.join(bin_path, "gfortran")
+        self.output.info(f"Exporting FC={compiler}")
+        self.buildenv_info.define("FC", compiler)
