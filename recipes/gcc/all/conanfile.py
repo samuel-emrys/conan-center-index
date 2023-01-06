@@ -362,6 +362,8 @@ class GccConan(ConanFile):
         self.output.info("Creating RANLIB env var with: " + ranlib)
         self.buildenv_info.define("RANLIB", ranlib)
 
+        self.conf_info.define("tools.build:compiler_executables", {"c": cc, "cpp": cxx, "fortran": fc})
+
         # TODO: Remove after conan 2.0 is released
         self.env_info.CC = cc
         self.env_info.CXX = cxx
