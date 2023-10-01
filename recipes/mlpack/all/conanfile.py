@@ -36,8 +36,8 @@ class mlpackRecipe(ConanFile):
         "with_openmp": False,
     }
 
-    def package_id(self):
-        self.info.clear()
+    # def package_id(self):
+    #     self.info.clear()
 
     def layout(self):
         cmake_layout(self, src_folder="src")
@@ -47,9 +47,13 @@ class mlpackRecipe(ConanFile):
         self.requires("ensmallen/2.19.1")
         self.requires("cereal/1.3.2")
         self.requires("stb/cci.20220909")
+        # self.requires("pkgconf/2.0.3")
         # if self.settings.os == "Linux":
         #     self.requires("libbfd/2.4.1") # available in binutils??
         #     self.requires("libdl/x.y.z") # not avilable?
+
+    def build_requirements(self):
+        self.tool_requires("pkgconf/2.0.3")
 
     #@property
     #def _minimum_compiler_version(self):
@@ -73,6 +77,8 @@ class mlpackRecipe(ConanFile):
         tc = CMakeToolchain(self)
         tc.variables["DEBUG"] = self.settings.build_type == "Debug"
         tc.variables["DOWNLOAD_DEPENDENCIES"] = False
+        tc.variables["BUILD_CLI_EXECUTABLES"] = False
+        tc.variables["BUILD_SHARED_LIBS"] = self.options.shared
         tc.generate()
 
 
@@ -88,8 +94,26 @@ class mlpackRecipe(ConanFile):
         replace_in_file(
             self,
             os.path.join(self.source_folder, "CMakeLists.txt"),
+            "ARMADILLO_INCLUDE_DIRS",
+            "armadillo_INCLUDE_DIRS",
+        )
+        replace_in_file(
+            self,
+            os.path.join(self.source_folder, "CMakeLists.txt"),
+            "ARMADILLO_LIBRARIES",
+            "armadillo_LIBRARIES",
+        )
+        replace_in_file(
+            self,
+            os.path.join(self.source_folder, "CMakeLists.txt"),
             "find_package(Ensmallen \"${ENSMALLEN_VERSION}\" REQUIRED)",
             "find_package(Ensmallen REQUIRED)",
+        )
+        replace_in_file(
+            self,
+            os.path.join(self.source_folder, "CMakeLists.txt"),
+            "ENSMALLEN_INCLUDE_DIR",
+            "Ensmallen_INCLUDE_DIR",
         )
         replace_in_file(
             self,
@@ -102,6 +126,30 @@ class mlpackRecipe(ConanFile):
             os.path.join(self.source_folder, "CMakeLists.txt"),
             "find_package(StbImage)",
             "find_package(stb)",
+        )
+        replace_in_file(
+            self,
+            os.path.join(self.source_folder, "CMakeLists.txt"),
+            "STB_IMAGE_INCLUDE_DIR",
+            "stb_INCLUDE_DIR",
+        )
+        #replace_in_file(
+        #    self,
+        #    os.path.join(self.source_folder, "CMakeLists.txt"),
+        #    "add_custom_target(pkgconfig ALL",
+        #    "message(\"CMAKE_COMMAND: ${CMAKE_COMMAND}\")\n    message(\"CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}\")\n    message(\"CMAKE_CURRENT_SOURCE_DIR: ${CMAKE_CURRENT_SOURCE_DIR}\")\n    message(\"CMAKE_CURRENT_BINARY_DIR: ${CMAKE_CURRENT_BINARY_DIR}\")\n    message(\"CMAKE_INSTALL_LIBDIR: ${CMAKE_INSTALL_LIBDIR}\")\n    add_custom_target(pkgconfig ALL",
+        #)
+        replace_in_file(
+            self,
+            os.path.join(self.source_folder, "CMakeLists.txt"),
+            "install(FILES",
+            "# install(FILES",
+        )
+        replace_in_file(
+            self,
+            os.path.join(self.source_folder, "CMakeLists.txt"),
+            "DESTINATION \"${CMAKE_INSTALL_LIBDIR}",
+            "# DESTINATION \"${CMAKE_INSTALL_LIBDIR}",
         )
         cmake = CMake(self)
         cmake.configure()
@@ -117,5 +165,3 @@ class mlpackRecipe(ConanFile):
     def package_info(self):
         self.cpp_info.bindirs = []
         self.cpp_info.libdirs = []
-        self.cpp_info.set_property("cmake_file_name", "Ensmallen")
-        self.cpp_info.set_property("cmake_target_name", "Ensmallen::Ensmallen")
