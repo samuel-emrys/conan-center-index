@@ -1,4 +1,4 @@
-from conan import ConanFile
+from conan import ConanFile, conan_version
 from conan.tools.cmake import CMakeToolchain, CMake, cmake_layout, CMakeDeps
 from conan.tools.files import get, replace_in_file, rmdir, copy
 from conan.tools.scm import Version
@@ -73,6 +73,11 @@ class mlpackRecipe(ConanFile):
         deps = CMakeDeps(self)
         deps.set_property("armadillo", "cmake_file_name", "Armadillo")
         deps.set_property("armadillo", "cmake_target_name", "Armadillo::Armadillo")
+        deps.set_property("armadillo", "cmake_config_version_compat", "AnyNewerVersion")
+        deps.set_property("ensmallen", "cmake_file_name", "Ensmallen")
+        deps.set_property("ensmallen", "cmake_target_name", "Ensmallen::Ensmallen")
+        deps.set_property("ensmallen", "cmake_config_version_compat", "AnyNewerVersion")
+        deps.set_property("cereal", "cmake_config_version_compat", "AnyNewerVersion")
         deps.generate()
         tc = CMakeToolchain(self)
         tc.variables["DEBUG"] = self.settings.build_type == "Debug"
@@ -83,14 +88,6 @@ class mlpackRecipe(ConanFile):
 
 
     def build(self):
-        # Remove hard requirement on armadillo 9.800.0
-        # This is a minimum requirement, use latest
-        replace_in_file(
-            self,
-            os.path.join(self.source_folder, "CMakeLists.txt"),
-            "find_package(Armadillo \"${ARMADILLO_VERSION}\" REQUIRED)",
-            "find_package(Armadillo REQUIRED)",
-        )
         replace_in_file(
             self,
             os.path.join(self.source_folder, "CMakeLists.txt"),
@@ -106,20 +103,8 @@ class mlpackRecipe(ConanFile):
         replace_in_file(
             self,
             os.path.join(self.source_folder, "CMakeLists.txt"),
-            "find_package(Ensmallen \"${ENSMALLEN_VERSION}\" REQUIRED)",
-            "find_package(Ensmallen REQUIRED)",
-        )
-        replace_in_file(
-            self,
-            os.path.join(self.source_folder, "CMakeLists.txt"),
             "ENSMALLEN_INCLUDE_DIR",
             "Ensmallen_INCLUDE_DIR",
-        )
-        replace_in_file(
-            self,
-            os.path.join(self.source_folder, "CMakeLists.txt"),
-            "find_package(cereal \"${CEREAL_VERSION}\" REQUIRED)",
-            "find_package(cereal REQUIRED)",
         )
         replace_in_file(
             self,
@@ -151,6 +136,31 @@ class mlpackRecipe(ConanFile):
             "DESTINATION \"${CMAKE_INSTALL_LIBDIR}",
             "# DESTINATION \"${CMAKE_INSTALL_LIBDIR}",
         )
+        # TODO: Remove this when conan 1.x compatibility is dropped. The need for patching these
+        # is removed through the introduction of the AnyNewerVersion compatibilty policy introduced
+        # in conan 2.0.12
+        if conan_version < Version("2.0.12"):
+            # Remove hard requirement on armadillo 9.800.0
+            # This is a minimum requirement, use latest
+            replace_in_file(
+                self,
+                os.path.join(self.source_folder, "CMakeLists.txt"),
+                "find_package(Armadillo \"${ARMADILLO_VERSION}\" REQUIRED)",
+                "find_package(Armadillo REQUIRED)",
+            )
+            replace_in_file(
+                self,
+                os.path.join(self.source_folder, "CMakeLists.txt"),
+                "find_package(cereal \"${CEREAL_VERSION}\" REQUIRED)",
+                "find_package(cereal REQUIRED)",
+            )
+            replace_in_file(
+                self,
+                os.path.join(self.source_folder, "CMakeLists.txt"),
+                "find_package(Ensmallen \"${ENSMALLEN_VERSION}\" REQUIRED)",
+                "find_package(Ensmallen REQUIRED)",
+            )
+
         cmake = CMake(self)
         cmake.configure()
 
