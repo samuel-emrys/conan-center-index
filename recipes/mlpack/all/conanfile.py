@@ -20,19 +20,13 @@ class mlpackRecipe(ConanFile):
     options = {
         "shared": [True, False],
         "fPIC": [True, False],
-        "with_python_bindings": [True, False],
-        "with_julia_bindings": [True, False],
-        "with_go_bindings": [True, False],
-        "with_r_bindings": [True, False],
+        "with_cli_executables": [True, False],
         "with_openmp": [True, False],
     }
     default_options = {
         "shared": False,
         "fPIC": True,
-        "with_python_bindings": False,
-        "with_julia_bindings": False,
-        "with_go_bindings": False,
-        "with_r_bindings": False,
+        "with_cli_executables": False,
         "with_openmp": False,
     }
 
@@ -82,7 +76,7 @@ class mlpackRecipe(ConanFile):
         tc = CMakeToolchain(self)
         tc.variables["DEBUG"] = self.settings.build_type == "Debug"
         tc.variables["DOWNLOAD_DEPENDENCIES"] = False
-        tc.variables["BUILD_CLI_EXECUTABLES"] = False
+        tc.variables["BUILD_CLI_EXECUTABLES"] = self.options.with_cli_executables
         tc.variables["BUILD_SHARED_LIBS"] = self.options.shared
         tc.generate()
 
@@ -109,6 +103,12 @@ class mlpackRecipe(ConanFile):
         replace_in_file(
             self,
             os.path.join(self.source_folder, "CMakeLists.txt"),
+            "CEREAL_INCLUDE_DIR",
+            "cereal_INCLUDE_DIR",
+        )
+        replace_in_file(
+            self,
+            os.path.join(self.source_folder, "CMakeLists.txt"),
             "find_package(StbImage)",
             "find_package(stb)",
         )
@@ -124,18 +124,18 @@ class mlpackRecipe(ConanFile):
         #    "add_custom_target(pkgconfig ALL",
         #    "message(\"CMAKE_COMMAND: ${CMAKE_COMMAND}\")\n    message(\"CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}\")\n    message(\"CMAKE_CURRENT_SOURCE_DIR: ${CMAKE_CURRENT_SOURCE_DIR}\")\n    message(\"CMAKE_CURRENT_BINARY_DIR: ${CMAKE_CURRENT_BINARY_DIR}\")\n    message(\"CMAKE_INSTALL_LIBDIR: ${CMAKE_INSTALL_LIBDIR}\")\n    add_custom_target(pkgconfig ALL",
         #)
-        replace_in_file(
-            self,
-            os.path.join(self.source_folder, "CMakeLists.txt"),
-            "install(FILES",
-            "# install(FILES",
-        )
-        replace_in_file(
-            self,
-            os.path.join(self.source_folder, "CMakeLists.txt"),
-            "DESTINATION \"${CMAKE_INSTALL_LIBDIR}",
-            "# DESTINATION \"${CMAKE_INSTALL_LIBDIR}",
-        )
+        # replace_in_file(
+        #     self,
+        #     os.path.join(self.source_folder, "CMakeLists.txt"),
+        #     "install(FILES",
+        #     "# install(FILES",
+        # )
+        # replace_in_file(
+        #     self,
+        #     os.path.join(self.source_folder, "CMakeLists.txt"),
+        #     "DESTINATION \"${CMAKE_INSTALL_LIBDIR}",
+        #     "# DESTINATION \"${CMAKE_INSTALL_LIBDIR}",
+        # )
         # TODO: Remove this when conan 1.x compatibility is dropped. The need for patching these
         # is removed through the introduction of the AnyNewerVersion compatibilty policy introduced
         # in conan 2.0.12
@@ -163,6 +163,7 @@ class mlpackRecipe(ConanFile):
 
         cmake = CMake(self)
         cmake.configure()
+        cmake.build()
 
     def package(self):
         cmake = CMake(self)
